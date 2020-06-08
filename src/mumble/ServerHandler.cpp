@@ -242,7 +242,9 @@ void ServerHandler::sendMessage(const char *data, int len, bool force) {
 
 		QApplication::postEvent(this, new ServerHandlerMessageEvent(qba, MessageHandler::UDPTunnel, true));
 	} else {
-		connection->csCrypt.encrypt(reinterpret_cast<const unsigned char *>(data), crypto, len);
+		if (!connection->csCrypt.encrypt(reinterpret_cast<const unsigned char *>(data), crypto, len)) {
+			return;
+		}
 		qusUdp->writeDatagram(reinterpret_cast<const char *>(crypto), len + 4, qhaRemote, usResolvedPort);
 	}
 }
@@ -470,7 +472,7 @@ void ServerHandler::sendPingInternal() {
 		return;
 	}
 
-	if (g.s.iMaxInFlightTCPPings >= 0 && iInFlightTCPPings >= g.s.iMaxInFlightTCPPings) {
+	if (g.s.iMaxInFlightTCPPings > 0 && iInFlightTCPPings >= g.s.iMaxInFlightTCPPings) {
 		serverConnectionClosed(QAbstractSocket::UnknownSocketError, tr("Server is not responding to TCP pings"));
 		return;
 	}
@@ -978,4 +980,3 @@ QUrl ServerHandler::getServerURL(bool withPassword) const {
 	
 	return url;
 }
-
